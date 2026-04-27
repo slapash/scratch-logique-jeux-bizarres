@@ -1,0 +1,12 @@
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local env/secrets
+.env
+.env.*
+
+# Caches/logs
+*.log
+.cache/

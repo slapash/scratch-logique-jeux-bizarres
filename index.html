@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Générateur de logique Scratch — Jeux bizarres</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    .scratch-block {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-height: 34px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border-bottom-width: 4px;
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.2;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+    }
+    .block-event { background:#facc15; border-color:#ca8a04; color:#422006; }
+    .block-motion { background:#3b82f6; border-color:#1d4ed8; color:white; }
+    .block-control { background:#f97316; border-color:#c2410c; color:white; }
+    .block-sensing { background:#06b6d4; border-color:#0891b2; color:white; }
+    .block-variable { background:#ef4444; border-color:#b91c1c; color:white; }
+    .block-looks { background:#a855f7; border-color:#7e22ce; color:white; }
+    .block-sound { background:#ec4899; border-color:#be185d; color:white; }
+    .block-operator { background:#22c55e; border-color:#15803d; color:white; }
+    .block-custom { background:#d946ef; border-color:#a21caf; color:white; }
+    .block-stack { margin: 6px 0; }
+    .nested { margin-left: 22px; padding-left: 12px; border-left: 4px dashed #cbd5e1; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50 text-slate-900">
+  <div x-data="app()" x-cloak class="mx-auto max-w-7xl p-4 md:p-8">
+    <header class="mb-8 rounded-[2rem] border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur md:p-8">
+      <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div class="mb-3 flex flex-wrap gap-2">
+            <span class="rounded-full bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-950">Blocs de logique Scratch</span>
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">8–10 ans</span>
+            <span class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">Le fun dès le début</span>
+          </div>
+          <h1 class="text-3xl font-black tracking-tight md:text-5xl">Générateur de logique Scratch — Jeux bizarres</h1>
+          <p class="mt-3 max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
+            Choisis une idée de jeu bizarre et découvre le concept traduit en blocs de logique simples, inspirés de Scratch : sprites, variables, boucle principale et améliorations.
+          </p>
+        </div>
+        <div class="grid grid-cols-3 gap-2 rounded-3xl bg-slate-50 p-3 text-center">
+          <div class="rounded-2xl bg-white p-3 shadow-sm">
+            <div class="text-2xl font-black" x-text="games.length"></div>
+            <div class="text-xs font-bold text-slate-500">idées</div>
+          </div>
+          <div class="rounded-2xl bg-white p-3 shadow-sm">
+            <div class="text-2xl font-black" x-text="mechanics.length - 1"></div>
+            <div class="text-xs font-bold text-slate-500">mécaniques</div>
+          </div>
+          <div class="rounded-2xl bg-white p-3 shadow-sm">
+            <div class="text-2xl font-black">3</div>
+            <div class="text-xs font-bold text-slate-500">niveaux</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="mb-6 grid gap-3 lg:grid-cols-[1fr_260px_220px]">
+      <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+        <label class="mb-1 block px-2 text-xs font-black uppercase tracking-wide text-slate-500">Recherche</label>
+        <input x-model="search" type="text" placeholder="Chercher un jeu, un sprite, une mécanique..." class="w-full rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-amber-400" />
+      </div>
+      <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+        <label class="mb-1 block px-2 text-xs font-black uppercase tracking-wide text-slate-500">Mécanique</label>
+        <select x-model="selectedMechanic" class="w-full rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-amber-400">
+          <template x-for="m in mechanics" :key="m">
+            <option :value="m" x-text="m"></option>
+          </template>
+        </select>
+      </div>
+      <div class="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+        <label class="mb-1 block px-2 text-xs font-black uppercase tracking-wide text-slate-500">Difficulté</label>
+        <select x-model="selectedDifficulty" class="w-full rounded-2xl border border-slate-200 px-4 py-3 font-semibold outline-none focus:border-amber-400">
+          <option value="Tous">Toutes</option>
+          <option value="Facile">Facile</option>
+          <option value="Moyen">Moyen</option>
+        </select>
+      </div>
+    </section>
+
+    <main class="grid gap-6 lg:grid-cols-[350px_1fr]">
+      <aside class="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-auto">
+        <div class="mb-3 flex items-center justify-between px-2">
+          <h2 class="text-lg font-black">Idées de jeux</h2>
+          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600" x-text="filteredGames.length + ' affichés'"></span>
+        </div>
+        <div class="space-y-2">
+          <template x-for="game in filteredGames" :key="game.id">
+            <button @click="selectGame(game.id)" class="w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm" :class="selectedGame.id === game.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white hover:border-amber-300'">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="text-sm font-black" x-text="game.id + '. ' + game.title"></div>
+                  <div class="mt-1 line-clamp-2 text-xs" :class="selectedGame.id === game.id ? 'text-slate-200' : 'text-slate-500'" x-text="game.mechanic"></div>
+                </div>
+                <span class="rounded-full px-2 py-1 text-[10px] font-black" :class="selectedGame.id === game.id ? 'bg-white/15 text-white' : difficultyClass(game.difficulty)" x-text="game.difficulty"></span>
+              </div>
+            </button>
+          </template>
+        </div>
+      </aside>
+
+      <section class="space-y-5">
+        <article class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div class="mb-2 flex flex-wrap gap-2">
+                <span class="rounded-full px-3 py-1 text-xs font-black" :class="mechanicClass(selectedGame.mechanic)" x-text="selectedGame.mechanic"></span>
+                <span class="rounded-full px-3 py-1 text-xs font-black" :class="difficultyClass(selectedGame.difficulty)" x-text="selectedGame.difficulty"></span>
+              </div>
+              <h2 class="text-3xl font-black tracking-tight" x-text="selectedGame.title"></h2>
+              <p class="mt-2 text-lg leading-relaxed text-slate-600" x-text="selectedGame.concept"></p>
+            </div>
+            <div class="rounded-3xl bg-amber-50 p-4 md:max-w-xs">
+              <div class="mb-1 text-xs font-black uppercase tracking-wide text-amber-700">Fun immédiat</div>
+              <p class="text-sm font-semibold leading-relaxed text-amber-950" x-text="selectedGame.funEarly"></p>
+            </div>
+          </div>
+        </article>
+
+        <section class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="mb-3 text-lg font-black">Sprites</h3>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="sprite in selectedGame.sprites" :key="sprite">
+                <span class="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700" x-text="sprite"></span>
+              </template>
+            </div>
+          </div>
+          <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="mb-3 text-lg font-black">Variables</h3>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="variable in selectedGame.variables" :key="variable">
+                <span class="rounded-2xl bg-red-500 px-3 py-2 text-sm font-black text-white" x-text="variable"></span>
+              </template>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <div class="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h3 class="text-xl font-black">Blocs de logique façon Scratch</h3>
+              <p class="text-sm text-slate-500">Logique conceptuelle, pas un export Scratch exact.</p>
+            </div>
+            <div class="hidden rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 md:block" x-text="selectedGame.scripts.length + ' scripts'"></div>
+          </div>
+
+          <div class="grid gap-4">
+            <template x-for="script in selectedGame.scripts" :key="script.title">
+              <div class="rounded-3xl bg-slate-50 p-4">
+                <div class="mb-3 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div class="text-lg font-black" x-text="script.title"></div>
+                    <div class="text-sm font-semibold text-slate-500" x-text="script.sprite"></div>
+                  </div>
+                  <span class="w-fit rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 shadow-sm" x-text="script.goal"></span>
+                </div>
+                <div class="space-y-1">
+                  <template x-for="block in script.blocks" :key="block.text + Math.random()">
+                    <div class="block-stack">
+                      <div class="scratch-block" :class="blockClass(block.type)">
+                        <span class="mr-2 rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide" x-text="blockLabels[block.type] || block.type"></span>
+                        <span x-text="block.text"></span>
+                      </div>
+                      <template x-if="block.children">
+                        <div class="nested mt-1">
+                          <template x-for="child in block.children" :key="child.text + Math.random()">
+                            <div class="block-stack">
+                              <div class="scratch-block" :class="blockClass(child.type)">
+                                <span class="mr-2 rounded-md bg-white/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide" x-text="blockLabels[child.type] || child.type"></span>
+                                <span x-text="child.text"></span>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <section class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="mb-3 flex items-center gap-2 text-lg font-black"><span>🏁</span> Boucle principale</h3>
+            <ol class="space-y-2">
+              <template x-for="(step, index) in selectedGame.coreLoop" :key="step">
+                <li class="flex gap-3 rounded-2xl bg-slate-50 p-3">
+                  <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-slate-900 text-xs font-black text-white" x-text="index + 1"></span>
+                  <span class="text-sm font-semibold text-slate-700" x-text="step"></span>
+                </li>
+              </template>
+            </ol>
+          </div>
+
+          <div class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="mb-3 flex items-center gap-2 text-lg font-black"><span>✨</span> Améliorations possibles</h3>
+            <div class="space-y-2">
+              <template x-for="upgrade in selectedGame.upgrades" :key="upgrade">
+                <div class="rounded-2xl bg-amber-50 p-3 text-sm font-semibold text-amber-950" x-text="upgrade"></div>
+              </template>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function app() {
+      return {
+        search: "",
+        selectedMechanic: "Tous",
+        selectedDifficulty: "Tous",
+        selectedId: 1,
+        blockLabels: {
+          event: "événement",
+          motion: "mouvement",
+          control: "contrôle",
+          sensing: "capteur",
+          variable: "variable",
+          looks: "apparence",
+          sound: "son",
+          operator: "opérateur",
+          custom: "bloc"
+        },
+        games: [
+          game(1, "L’Usine du Toast qui crie", "Un toast tente de s’échapper d’un tapis roulant avant d’être mangé par une bouche géante de petit-déjeuner.", "Le toast glisse sur le tapis roulant et saute pour éviter les fourchettes ou les dents.", "Plateforme", "Moyen", ["Toast", "Tapis roulant", "Fourchette", "Bouche géante", "Beurre"], ["score", "vies", "vitesseToast", "jeuActif"], ["Le toast avance sur le tapis", "Le joueur saute", "Il évite les fourchettes et les flammes", "Il ramasse du beurre", "Il atteint la sortie avant la bouche"], ["Toast brûlé ennemi", "Tapis roulant plus rapide", "Beurre doré", "Bouche qui s’ouvre et se ferme"]),
+          game(2, "Simulateur d’Imprimante Furieuse", "Une imprimante cassée lance des feuilles partout et provoque le chaos au bureau.", "On appuie sur ESPACE et les feuilles s’envolent immédiatement.", "Projectile", "Facile", ["Imprimante", "Feuille", "Chef", "Objets du bureau"], ["score", "temps", "vitesseFeuille", "chaos"], ["Appuyer sur ESPACE", "Créer un clone de feuille", "La feuille vole", "Elle touche des objets du bureau", "Le joueur gagne des points de chaos"], ["Explosion d’encre", "Mode bourrage papier", "Chef furieux", "Document doré"]),
+          game(3, "Tape le Moustique", "Un moustique vole de façon imprévisible et le joueur doit le taper.", "Le moustique bouge bizarrement et réagit quand on clique dessus.", "Cible à cliquer", "Facile", ["Moustique", "Main ou babouche", "Décor"], ["score", "temps", "vitesse"], ["Le moustique bouge au hasard", "Le joueur clique dessus", "Un son de tape se joue", "Le score augmente", "Le moustique repart plus vite"], ["Vol avec loopings", "Faux moustique", "Moustique boss", "Score combo"]),
+          game(4, "La Babouche Volante de Mamie", "Une babouche volante poursuit des cafards dans la maison.", "La babouche suit la souris et frappe les cafards qui courent.", "Esquive / poursuite", "Facile", ["Babouche", "Cafard", "Meuble", "Cafard doré"], ["score", "temps", "combo"], ["Déplacer la babouche", "Les cafards courent", "Toucher un cafard", "Marquer un point", "Faire apparaître un autre cafard"], ["Cafard rapide", "Obstacles avec les meubles", "Série de combos", "Super babouche"]),
+          game(5, "Distributeur Possédé", "Un distributeur hanté tire des snacks sur des clients avec des commandes bizarres.", "Les snacks sortent du distributeur comme des projectiles ridicules.", "Tri / commandes", "Moyen", ["Distributeur", "Snack", "Client", "Bulle de commande"], ["score", "temps", "typeCommande", "typeSnack"], ["Le client montre sa commande", "Le joueur choisit un snack", "Le snack est lancé", "On vérifie si la commande correspond", "Score ou pénalité"], ["Client en colère", "Snack mystère", "Machine qui surchauffe", "Commandes en combo"]),
+          game(6, "Le Sol est de la Soupe", "Un petit personnage saute sur des légumes flottants dans un bol de soupe géant.", "Le joueur saute sur des carottes, pommes de terre et morceaux de pain.", "Plateforme", "Moyen", ["Petit personnage", "Plateformes légumes", "Soupe", "Cuillère d’arrivée"], ["vies", "forceSaut", "gravité", "score"], ["Se déplacer à gauche et à droite", "Sauter sur les légumes", "Éviter la soupe", "Ramasser des croûtons", "Atteindre la cuillère"], ["Boule de viande mobile", "Bulles brûlantes", "Pain flottant", "Ingrédient secret"]),
+          game(7, "Service de Livraison Chat", "Un chat livre des objets étranges aux bons endroits.", "Le chat court avec des objets ridicules : chaussettes, poisson, devoirs.", "Tri / commandes", "Moyen", ["Chat", "Objet", "Maison", "Chien"], ["score", "temps", "typeObjet", "porteObjet"], ["Ramasser un objet", "Lire la destination", "Déplacer le chat", "Déposer l’objet", "Gagner si c’est correct"], ["Chien qui poursuit", "Objets lourds", "Boîte mystère", "Réaction en cas de mauvaise livraison"]),
+          game(8, "Abduction de Vaches par Aliens", "Un OVNI enlève des vaches tout en évitant les mauvais objets.", "On appuie sur ESPACE et le rayon attire les vaches vers le haut.", "Capture / rayon", "Moyen", ["OVNI", "Rayon", "Vache", "Mauvais objet", "Fermier"], ["score", "temps", "rayonActif", "batterie"], ["Déplacer l’OVNI", "Activer le rayon", "Attraper une vache", "Éviter les mauvais objets", "Marquer puis recommencer"], ["Vache dorée", "Batterie limitée", "Fermier énervé", "Rayon plus grand"]),
+          game(9, "Panique à la Boulangerie", "Des pains et des pâtisseries s’échappent du four et doivent être attrapés.", "Un pain avec des jambes s’enfuit et le joueur l’attrape.", "Cible à cliquer", "Facile", ["Pain", "Croissant", "Four", "Filet"], ["score", "temps", "vitesse"], ["Une pâtisserie apparaît", "Elle se met à courir", "Le joueur clique ou attrape", "Le score augmente", "Une nouvelle pâtisserie apparaît"], ["Pain brûlé pénalité", "Croissant bonus", "Roi du pain boss", "Vitesse qui augmente"]),
+          game(10, "Hamster en Combinaison Spatiale", "Un hamster flotte dans l’espace, ramasse des graines de tournesol et évite des chaussettes volantes.", "Le hamster flotte avec les flèches du clavier.", "Esquive / poursuite", "Facile", ["Hamster", "Graine", "Chaussette volante", "Planète"], ["score", "vies", "vitesseFlotte"], ["Déplacer le hamster", "Ramasser les graines", "Éviter les chaussettes", "Marquer des points", "Perdre une vie si on est touché"], ["Boost fusée", "Graine dorée", "Tempête de chaussettes", "Rebond sur planète"]),
+          game(11, "Taxi Banane", "Une banane conduit un petit taxi et transporte des fruits passagers.", "La voiture-banane se déplace en ville.", "Tri / commandes", "Moyen", ["Taxi banane", "Fruit passager", "Destination", "Circulation"], ["score", "temps", "typePassager", "portePassager"], ["Conduire le taxi", "Ramasser un passager", "Trouver la destination", "Déposer le passager", "Marquer un point"], ["Cônes de circulation", "Fruit VIP", "Mauvaise destination", "Boost vitesse"]),
+          game(12, "Attaque du Pigeon", "Un pigeon vole à l’écran et lâche des projectiles rigolos sur des chapeaux, parapluies ou statues.", "On appuie sur ESPACE et quelque chose tombe.", "Projectile", "Facile", ["Pigeon", "Projectile", "Chapeau", "Parapluie", "Statue"], ["score", "temps", "vitesseProjectile"], ["Déplacer le pigeon", "Appuyer sur ESPACE", "Créer un clone qui tombe", "Toucher une cible", "Marquer un point"], ["Cibles mobiles", "Chapeau doré", "Parapluie bouclier", "Combo de lancers"]),
+          game(13, "Monstre Chaussette — Évasion de la Machine", "Un monstre chaussette vole les chaussettes d’une machine à laver avant qu’elles disparaissent.", "Les chaussettes sortent de la machine au hasard.", "Cible à cliquer", "Facile", ["Monstre chaussette", "Chaussette", "Machine à laver", "Panier"], ["score", "temps", "vitesseChaussette"], ["Une chaussette apparaît", "Elle s’envole", "Le joueur l’attrape", "Le score augmente", "Elle disparaît si elle est ratée"], ["Chaussette arc-en-ciel rare", "Mauvaise chaussette", "Machine plus rapide", "Bonus panier"]),
+          game(14, "Magicien Bubble-gum", "Un magicien tire des bulles de chewing-gum pour piéger des monstres.", "Les bulles-projectiles enferment les monstres.", "Projectile", "Moyen", ["Magicien", "Bulle", "Monstre", "Baguette magique"], ["score", "temps", "vitesseBulle", "mana"], ["Viser avec le magicien", "Tirer une bulle", "Toucher un monstre", "Geler le monstre", "Marquer un point"], ["Grosse bulle", "Monstre qui s’échappe", "Recharge de mana", "Boss monstre"]),
+          game(15, "Patate Danseuse", "Une patate danse pour survivre. Le joueur appuie sur les flèches dans le bon ordre.", "L’animation de danse commence tout de suite.", "Rythme / séquence", "Moyen", ["Patate", "Flèche affichée", "Piste de danse", "Projecteur"], ["score", "combo", "flecheActuelle", "temps"], ["Afficher une flèche", "Le joueur appuie sur une touche", "Bonne touche = danse", "Le score augmente", "Nouvelle flèche"], ["Séquences plus longues", "Mode disco", "Multiplicateur combo", "La patate vacille si erreur"]),
+          game(16, "Salon de Coiffure Poulpe", "Un poulpe coiffe les clients avec ses huit bras.", "On clique sur les outils et les cheveux du client changent.", "Tri / commandes", "Moyen", ["Poulpe", "Client", "Outil coiffure", "Bulle de demande"], ["score", "temps", "typeOutil", "typeDemande"], ["Le client demande une coiffure", "Choisir le bon outil", "L’appliquer aux cheveux", "Bonne coiffure = score", "Client suivant"], ["Couleurs de cheveux folles", "Client en colère", "Manche rapide", "Client VIP rare"]),
+          game(17, "Nuage en Colère", "Un nuage lance de la pluie, des éclairs et de la neige sur différentes cibles.", "On appuie sur des touches pour faire tomber la météo.", "Tri / commandes", "Moyen", ["Nuage", "Pluie", "Éclair", "Neige", "Cibles"], ["score", "typeMeteo", "typeCible", "temps"], ["Une cible apparaît", "Choisir la touche météo", "La météo tombe", "Effet correct = score", "Mauvais effet = pénalité"], ["Bonus arc-en-ciel", "Mode tempête", "Cible mobile", "Combo météo"]),
+          game(18, "Grenouille Attrape-Snacks", "Une grenouille lance sa langue pour attraper des mouches, bonbons ou étoiles.", "La langue sort puis revient.", "Capture / rayon", "Facile", ["Grenouille", "Langue", "Mouche", "Bonbon", "Étoile"], ["score", "temps", "langueSortie"], ["Viser avec la grenouille", "Appuyer sur ESPACE", "La langue s’étend", "Attraper une cible", "La langue revient"], ["Mauvais insecte pénalité", "Mouche dorée", "Langue plus longue", "Cibles plus rapides"]),
+          game(19, "Dentiste de Monstre", "Un dentiste nettoie les dents d’un monstre tout en évitant les morsures.", "On clique sur les dents sales pour les nettoyer.", "Cible à cliquer", "Facile", ["Bouche du monstre", "Dent sale", "Brosse à dents", "Alerte morsure"], ["score", "temps", "risqueMorsure"], ["Une dent sale apparaît", "Cliquer sur la dent", "La nettoyer", "Marquer un point", "Éviter le moment de morsure"], ["Dent en or bonus", "Grognement du monstre", "Saleté plus rapide", "Pouvoir fée des dents"]),
+          game(20, "Panique Glace du Pingouin", "Un pingouin sert des glaces avant qu’elles ne fondent.", "On met des boules de glace sur les cornets.", "Tri / commandes", "Moyen", ["Pingouin", "Cornet", "Boule de glace", "Client"], ["score", "temps", "parfum", "commande"], ["Le client commande un parfum", "Choisir la boule", "La poser sur le cornet", "Servir", "Marquer si c’est correct"], ["Minuteur de fonte", "Double boule", "Réaction mauvais parfum", "Cornet doré"]),
+          game(21, "Dragon qui Éternue du Feu", "Un bébé dragon éternue des boules de feu par accident et allume des bougies d’anniversaire.", "Les boules de feu partent vite.", "Projectile", "Facile", ["Bébé dragon", "Boule de feu", "Bougie", "Gâteau"], ["score", "temps", "vitesseFeu"], ["Appuyer sur ESPACE", "Créer une boule de feu", "La boule de feu avance", "Toucher une bougie", "Marquer un point"], ["Éviter les ballons", "Gros éternuement", "Bougie dorée", "Vague de bougies"]),
+          game(22, "Robot qui a Perdu sa Tête", "La tête d’un robot roule partout et le corps doit la rattraper.", "La tête rebondit immédiatement.", "Esquive / poursuite", "Facile", ["Corps du robot", "Tête du robot", "Obstacle", "Batterie"], ["score", "vies", "vitesseTete"], ["Déplacer le corps", "La tête rebondit", "Rattraper la tête", "Marquer un point", "Réinitialiser la tête"], ["Boost batterie", "Flaques d’huile", "Pouvoir aimant", "Tête plus rapide"]),
+          game(23, "Livraison de Pizza Planétaire", "Une fusée livre des pizzas à des aliens sur différentes planètes.", "La fusée vole et lâche une pizza.", "Tri / commandes", "Moyen", ["Fusée", "Pizza", "Alien", "Planète"], ["score", "temps", "typePizza", "commandeAlien"], ["Faire voler la fusée", "Lire la commande de l’alien", "Lâcher la pizza", "Vérifier la commande", "Marquer un point"], ["Réaction mauvais alien", "Obstacle météore", "Pizza rare", "Combo planète"]),
+          game(24, "Chat Invisible", "Le chat disparaît toutes les quelques secondes et le joueur doit le retrouver grâce aux empreintes.", "Le chat apparaît puis disparaît.", "Cible à cliquer", "Facile", ["Chat", "Empreintes", "Rideau", "Lampe de recherche"], ["score", "temps", "visible"], ["Le chat se cache", "Les empreintes donnent un indice", "Cliquer sur le chat caché", "Marquer un point", "Le chat change de place"], ["Fausses empreintes", "Indice miaou", "Mode mini-chat", "Poisson bonus"]),
+          game(25, "Sac à Dos Hanté", "Des fournitures scolaires jaillissent d’un sac à dos hanté et doivent être attrapées.", "Crayons et livres sortent au hasard.", "Cible à cliquer", "Facile", ["Sac à dos", "Crayon", "Livre", "Gomme", "Fantôme"], ["score", "temps", "vitesseObjet"], ["Un objet sort du sac", "Le joueur l’attrape ou clique", "Bon objet = score", "Objet fantôme = pénalité", "Nouvel objet"], ["Trier par matières", "Crayon doré rare", "Fantôme qui fait peur", "Vitesse qui augmente"])
+        ],
+        get mechanics() {
+          return ["Tous", ...Array.from(new Set(this.games.map(g => g.mechanic)))];
+        },
+        get selectedGame() {
+          return this.games.find(g => g.id === this.selectedId) || this.games[0];
+        },
+        get filteredGames() {
+          const q = this.search.toLowerCase().trim();
+          return this.games.filter(g => {
+            const text = [g.title, g.concept, g.mechanic, g.funEarly, ...g.sprites, ...g.variables].join(" ").toLowerCase();
+            const matchesSearch = !q || text.includes(q);
+            const matchesMechanic = this.selectedMechanic === "Tous" || g.mechanic === this.selectedMechanic;
+            const matchesDifficulty = this.selectedDifficulty === "Tous" || g.difficulty === this.selectedDifficulty;
+            return matchesSearch && matchesMechanic && matchesDifficulty;
+          });
+        },
+        selectGame(id) { this.selectedId = id; },
+        mechanicClass(mechanic) {
+          const map = {
+            "Cible à cliquer": "bg-pink-100 text-pink-800 border border-pink-200",
+            "Projectile": "bg-orange-100 text-orange-800 border border-orange-200",
+            "Esquive / poursuite": "bg-cyan-100 text-cyan-800 border border-cyan-200",
+            "Tri / commandes": "bg-violet-100 text-violet-800 border border-violet-200",
+            "Plateforme": "bg-blue-100 text-blue-800 border border-blue-200",
+            "Capture / rayon": "bg-emerald-100 text-emerald-800 border border-emerald-200",
+            "Rythme / séquence": "bg-yellow-100 text-yellow-800 border border-yellow-200"
+          };
+          return map[mechanic] || "bg-slate-100 text-slate-700";
+        },
+        difficultyClass(difficulty) {
+          return difficulty === "Facile" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800";
+        },
+        blockClass(type) { return "block-" + type; }
+      };
+    }
+
+    function game(id, title, concept, funEarly, mechanic, difficulty, sprites, variables, coreLoop, upgrades) {
+      return {
+        id, title, concept, funEarly, mechanic, difficulty, sprites, variables, coreLoop, upgrades,
+        scripts: makeScripts(title, mechanic, sprites, variables)
+      };
+    }
+
+    function makeScripts(title, mechanic, sprites, variables) {
+      const main = sprites[0] || "Joueur";
+      const target = sprites[1] || "Cible";
+      const base = [
+        {
+          title: "Démarrer le jeu",
+          sprite: "Scène",
+          goal: "Initialiser les variables et lancer la partie",
+          blocks: [
+            b("event", "quand le drapeau vert est cliqué"),
+            b("variable", "mettre score à 0"),
+            b("variable", variables.includes("temps") ? "mettre temps à 45" : "mettre jeuActif à 1"),
+            b("event", "envoyer le message Début du jeu"),
+            b("control", "répéter jusqu’à temps = 0 ou vies = 0", [
+              b("control", "attendre 1 seconde"),
+              b("variable", "ajouter -1 à temps")
+            ]),
+            b("event", "envoyer le message Fin du jeu")
+          ]
+        }
+      ];
+
+      const patterns = {
+        "Cible à cliquer": [
+          {
+            title: "Déplacement de la cible",
+            sprite: main,
+            goal: "Bouger ou apparaître de façon imprévisible",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("looks", "montrer"),
+              b("control", "répéter indéfiniment", [
+                b("motion", "aller à une position aléatoire"),
+                b("control", "attendre nombre aléatoire entre 0,4 et 1 seconde")
+              ])
+            ]
+          },
+          {
+            title: "Récompense au clic",
+            sprite: main,
+            goal: "Récompenser le joueur immédiatement",
+            blocks: [
+              b("event", "quand ce sprite est cliqué"),
+              b("variable", "ajouter 1 à score"),
+              b("sound", "jouer le son pop / tape / attrape"),
+              b("looks", "basculer sur le costume réaction"),
+              b("motion", "aller à une position aléatoire")
+            ]
+          }
+        ],
+        "Projectile": [
+          {
+            title: "Lancer un projectile",
+            sprite: main,
+            goal: "Appuyer sur une touche et créer un objet volant",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("control", "si la touche espace est pressée", [
+                  b("event", "créer un clone de " + target),
+                  b("sound", "jouer le son tir")
+                ])
+              ])
+            ]
+          },
+          {
+            title: "Clone du projectile",
+            sprite: target,
+            goal: "Avancer, toucher, disparaître",
+            blocks: [
+              b("event", "quand je commence comme clone"),
+              b("looks", "montrer"),
+              b("motion", "aller à " + main),
+              b("control", "répéter jusqu’à toucher une cible ou toucher le bord", [
+                b("motion", "avancer de 10 pas"),
+                b("control", "attendre 0,02 seconde")
+              ]),
+              b("control", "si touche une cible", [
+                b("variable", "ajouter 1 à score"),
+                b("sound", "jouer le son impact")
+              ]),
+              b("control", "supprimer ce clone")
+            ]
+          }
+        ],
+        "Esquive / poursuite": [
+          {
+            title: "Déplacement du joueur",
+            sprite: main,
+            goal: "Contrôler le personnage principal",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("control", "si flèche droite pressée", [b("motion", "ajouter 6 à x")]),
+                b("control", "si flèche gauche pressée", [b("motion", "ajouter -6 à x")]),
+                b("control", "si flèche haut pressée", [b("motion", "ajouter 6 à y")]),
+                b("control", "si flèche bas pressée", [b("motion", "ajouter -6 à y")])
+              ])
+            ]
+          },
+          {
+            title: "Déplacement de l’ennemi ou de l’objet",
+            sprite: target,
+            goal: "Créer une pression de poursuite ou d’esquive",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("motion", "avancer d’un nombre aléatoire entre 3 et 7 pas"),
+                b("motion", "tourner à droite d’un nombre aléatoire entre -30 et 30 degrés"),
+                b("motion", "rebondir si le bord est atteint"),
+                b("control", "si touche " + main, [
+                  b("variable", "ajouter 1 à score"),
+                  b("motion", "aller à une position aléatoire")
+                ])
+              ])
+            ]
+          }
+        ],
+        "Tri / commandes": [
+          {
+            title: "Créer une commande ou un type d’objet",
+            sprite: "Scène",
+            goal: "Indiquer au joueur ce qu’il doit associer",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("variable", "mettre typeObjet à un nombre aléatoire entre 1 et 3"),
+                b("looks", "montrer la bulle de commande"),
+                b("control", "attendre 2 secondes")
+              ])
+            ]
+          },
+          {
+            title: "Choisir et associer",
+            sprite: main,
+            goal: "Récompenser les bons choix",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "si le joueur choisit le bon objet", [
+                b("variable", "ajouter 1 à score"),
+                b("sound", "jouer le son réussite"),
+                b("looks", "dire Correct ! pendant 0,5 seconde")
+              ]),
+              b("control", "si le joueur choisit le mauvais objet", [
+                b("variable", "ajouter -1 à score"),
+                b("sound", "jouer le son erreur")
+              ])
+            ]
+          }
+        ],
+        "Plateforme": [
+          {
+            title: "Se déplacer et sauter",
+            sprite: main,
+            goal: "Contrôle de plateforme simple",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("control", "si flèche droite pressée", [b("motion", "ajouter 5 à x")]),
+                b("control", "si flèche gauche pressée", [b("motion", "ajouter -5 à x")]),
+                b("control", "si espace pressée et touche une plateforme", [b("motion", "ajouter 14 à y")]),
+                b("motion", "ajouter gravité à y"),
+                b("variable", "ajouter -1 à gravité")
+              ])
+            ]
+          },
+          {
+            title: "Danger et objectif",
+            sprite: main,
+            goal: "Transformer le déplacement en vrai jeu",
+            blocks: [
+              b("control", "si touche un danger", [
+                b("variable", "ajouter -1 à vies"),
+                b("motion", "retourner à la position de départ")
+              ]),
+              b("control", "si touche l’objectif", [
+                b("event", "envoyer le message Victoire")
+              ])
+            ]
+          }
+        ],
+        "Capture / rayon": [
+          {
+            title: "Activer la zone de capture",
+            sprite: main,
+            goal: "Faire apparaître le rayon, la langue ou l’aspirateur",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("control", "si la touche espace est pressée", [
+                  b("variable", "mettre rayonActif à 1"),
+                  b("looks", "montrer le rayon / la langue"),
+                  b("control", "attendre 0,4 seconde"),
+                  b("variable", "mettre rayonActif à 0"),
+                  b("looks", "cacher le rayon / la langue")
+                ])
+              ])
+            ]
+          },
+          {
+            title: "Attraper la cible",
+            sprite: target,
+            goal: "Attirer ou collecter le bon objet",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("motion", "bouger au hasard"),
+                b("control", "si touche la zone de capture et rayonActif = 1", [
+                  b("motion", "glisser vers " + main),
+                  b("variable", "ajouter 1 à score"),
+                  b("motion", "aller à une position aléatoire")
+                ])
+              ])
+            ]
+          }
+        ],
+        "Rythme / séquence": [
+          {
+            title: "Afficher la consigne",
+            sprite: "Scène",
+            goal: "Indiquer au joueur quelle touche appuyer",
+            blocks: [
+              b("event", "quand je reçois Début du jeu"),
+              b("control", "répéter indéfiniment", [
+                b("variable", "mettre flecheActuelle à gauche/droite/haut/bas au hasard"),
+                b("looks", "montrer la flèche actuelle"),
+                b("control", "attendre 1 seconde")
+              ])
+            ]
+          },
+          {
+            title: "Réagir à la bonne touche",
+            sprite: main,
+            goal: "Transformer l’action en danse et en score",
+            blocks: [
+              b("control", "si la touche pressée = flecheActuelle", [
+                b("variable", "ajouter 1 à score"),
+                b("variable", "ajouter 1 à combo"),
+                b("looks", "basculer sur le costume danse")
+              ]),
+              b("control", "si mauvaise touche pressée", [
+                b("variable", "mettre combo à 0"),
+                b("sound", "jouer le son wobble")
+              ])
+            ]
+          }
+        ]
+      };
+      return [...base, ...(patterns[mechanic] || patterns["Cible à cliquer"]), gameOverScript()];
+    }
+
+    function gameOverScript() {
+      return {
+        title: "Fin du jeu",
+        sprite: "Texte fin du jeu",
+        goal: "Terminer clairement",
+        blocks: [
+          b("event", "quand le drapeau vert est cliqué"),
+          b("looks", "cacher"),
+          b("event", "quand je reçois Fin du jeu"),
+          b("looks", "montrer"),
+          b("looks", "dire regroupe 'Score final : ' et score"),
+          b("control", "arrêter tout")
+        ]
+      };
+    }
+
+    function b(type, text, children) {
+      const block = { type, text };
+      if (children) block.children = children;
+      return block;
+    }
+  </script>
+</body>
+</html>
