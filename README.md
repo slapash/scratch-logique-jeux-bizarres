@@ -12,9 +12,24 @@ python3 -m http.server 5179
 
 Then visit `http://localhost:5179/`.
 
+## Run with Docker
+
+```bash
+docker compose up --build -d
+```
+
+Then visit `http://localhost:5180/`.
+
+Health check:
+
+```bash
+curl http://localhost:5180/health
+```
+
 ## Stack
 
 - Static HTML
 - Tailwind CDN
 - Alpine.js CDN
+- Nginx container for deployment
 - No build step
